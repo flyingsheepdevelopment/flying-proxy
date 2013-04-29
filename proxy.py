@@ -333,7 +333,7 @@ def main ():
 	else:
 		logger.log (logging.INFO, "Any clients will be served...")
 
-	server_address = (socket.gethostbyname (local_hostname), port)
+	server_address = (ip, port)
 	ProxyHandler.protocol = "HTTP/1.0"
 	httpd = ThreadingHTTPServer (server_address, ProxyHandler, logger)
 	sa = httpd.socket.getsockname ()
