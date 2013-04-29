@@ -56,6 +56,7 @@ from types import FrameType, CodeType
 from time import sleep
 import ftplib
 import base64
+import ConfigParser
 
 DEFAULT_LOG_FILENAME = "proxy.log"
 
@@ -281,13 +282,23 @@ def daemonize (logger):
 	if fd not in (1, 2): os.close (fd)
 	
 def main ():
-	logfile = None
-	daemon  = False
+	cfg = ConfigParser.ConfigParser()
+	cfg.read("proxy.ini")
+	logfile = cfg.get("proxy", "logfile")
+	if logfile == "None":
+		logfile = None
+	daemon  = cfg.get("proxy", "daemon")
+	if daemon == "False":
+		daemon = False
+	else:
+		daemon = True
 	max_log_size = 20
-	port = 8000
+	listen = cfg.get("proxy", "listen").split(":")
+	ip = listen[0]
+	port = int(listen[1])
 	allowed = []
 	global credentials
-	credentials = "user:password"
+	credentials = cfg.get("proxy", "login")
 	run_event = threading.Event ()
 	local_hostname = socket.gethostname ()
 	
