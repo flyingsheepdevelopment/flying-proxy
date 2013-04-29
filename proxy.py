@@ -76,8 +76,9 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			self.__base_handle()
 
 	def checkAuth(self):
+		global credentials
 		auth = self.headers.get("Proxy-Authorization")
-		if auth != "Basic "+base64.b64encode("user:password"):
+		if auth != "Basic "+base64.b64encode(credentials):
 			self.send_response(407, "Authentication required")
 			self.send_header("Proxy-Authenticate", "Basic realm=\"Flying Proxy\"")
 			self.end_headers()
@@ -229,11 +230,12 @@ def logSetup (filename, log_size, daemon):
 
 def usage (msg=None):
 	if msg: print msg
-	print sys.argv[0], "[-p port] [-l logfile] [-dh] [allowed_client_name ...]]"
+	print sys.argv[0], "[-p port] [-l logfile] [-c user:password] [-dh] [allowed_client_name ...]]"
 	print
 	print "   -p	   - Port to bind to"
 	print "   -l	   - Path to logfile. If not specified, STDOUT is used"
 	print "   -d	   - Run in the background"
+	print "   -c      - Set user and password for authentication"
 	print
 
 def handler (signo, frame):
@@ -284,10 +286,12 @@ def main ():
 	max_log_size = 20
 	port = 8000
 	allowed = []
+	global credentials
+	credentials = "user:password"
 	run_event = threading.Event ()
 	local_hostname = socket.gethostname ()
 	
-	try: opts, args = getopt.getopt (sys.argv[1:], "l:dhp:", [])
+	try: opts, args = getopt.getopt (sys.argv[1:], "l:dhp:c:", [])
 	except getopt.GetoptError, e:
 		usage (str (e))
 		return 1
@@ -296,6 +300,7 @@ def main ():
 		if opt == "-p": port = int (value)
 		if opt == "-l": logfile = value
 		if opt == "-d": daemon = not daemon
+		if opt == "-c": credentials = value
 		if opt == "-h":
 			usage ()
 			return 0
