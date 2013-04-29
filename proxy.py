@@ -42,7 +42,7 @@ Any help will be greatly appreciated.		SUZUKI Hisao
 			 * Added code to make this a standalone application
 """
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 
 import BaseHTTPServer, select, socket, SocketServer, urlparse
 import logging
@@ -55,6 +55,7 @@ import threading
 from types import FrameType, CodeType
 from time import sleep
 import ftplib
+import base64
 
 DEFAULT_LOG_FILENAME = "proxy.log"
 
@@ -74,6 +75,15 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		else:
 			self.__base_handle()
 
+	def checkAuth(self):
+		auth = self.headers.get("Proxy-Authorization")
+		if auth != "Basic "+base64.b64encode("user:password"):
+			self.send_response(407, "Authentication required")
+			self.send_header("Proxy-Authenticate", "Basic realm=\"Flying Proxy\"")
+			self.end_headers()
+			return False
+		return True
+		
 	def _connect_to(self, netloc, soc):
 		i = netloc.find(':')
 		if i >= 0:
@@ -90,6 +100,8 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		return 1
 
 	def do_CONNECT(self):
+		if not self.checkAuth():
+			return
 		soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		try:
 			if self._connect_to(self.path, soc):
@@ -104,6 +116,8 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			self.connection.close()
 
 	def do_GET(self):
+		if not self.checkAuth():
+			return
 		(scm, netloc, path, params, query, fragment) = urlparse.urlparse(
 			self.path, 'http')
 		if scm not in ('http', 'ftp') or fragment or not netloc:
