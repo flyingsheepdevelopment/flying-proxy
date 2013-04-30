@@ -60,6 +60,9 @@ import ConfigParser
 
 DEFAULT_LOG_FILENAME = "proxy.log"
 
+def _quote_html(html):
+	return html.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
 class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 	__base = BaseHTTPServer.BaseHTTPRequestHandler
 	__base_handle = __base.handle
@@ -198,6 +201,44 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		self.server.logger.log (logging.ERROR, "%s %s", self.address_string (),
 								format % args)
 
+	def send_error(self, code, message=None, netloc=None):
+		try:
+			msg_short, msg_long = self.responses[code]
+		except KeyError:
+			msg_short, msg_long = "???", "???"
+		if message is None:
+			message = msg_short
+		explain = msg_long
+		self.log_error("code %s, message %s", code, message)
+		content = """<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Error %(code)d</title>
+		<style>
+			div[role*=main] {
+				width: 500px;
+				margin: 3em auto;
+			}
+			h3 { font: 1.5em sans-serif; }
+			div p { font: 1.2em sans-serif; }
+		</style>
+	</head>
+	<body>
+		<div role="main">
+			<h3>Error %(code)d: %(message)s</h3>
+			<p>
+				%(explain)s
+			</p>
+		</div>
+	</boody>
+</html>""" % {'code': code, 'message': _quote_html(message), 'explain': explain}
+		self.send_response(code, message)
+		self.send_header("Content-Type", self.error_content_type)
+		self.send_header("Connection", "close")
+		self.end_headers()
+		if self.command != 'HEAD' and code >= 200 and code not in (204, 304):
+			self.wfile.write(content)
 class ThreadingHTTPServer (SocketServer.ThreadingMixIn,
 						   BaseHTTPServer.HTTPServer):
 	def __init__ (self, server_address, RequestHandlerClass, logger=None):
