@@ -59,6 +59,7 @@ import base64
 import ConfigParser
 
 DEFAULT_LOG_FILENAME = "proxy.log"
+credentials = "dGVzdDp0ZXN0" # test:test
 
 def _quote_html(html):
 	return html.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
