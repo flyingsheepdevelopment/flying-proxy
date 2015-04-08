@@ -60,6 +60,9 @@ import ConfigParser
 
 DEFAULT_LOG_FILENAME = "proxy.log"
 credentials = "dGVzdDp0ZXN0" # test:test
+do_forward_socks = False
+socks_host = ""
+socks_port = 0
 
 def _quote_html(html):
 	return html.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -108,7 +111,16 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 	def do_CONNECT(self):
 		if not self.checkAuth():
 			return
-		soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		global do_forward_socks
+		global socks_host
+		global socks_port
+		if do_forward_socks:
+			import socks
+			soc = socks.socksocket()
+			soc.setproxy(socks.PROXY_TYPE_SOCKS5, socks_host, socks_port)
+		else:
+			soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		
 		try:
 			if self._connect_to(self.path, soc):
 				self.log_request(200)
@@ -129,7 +141,15 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		if scm not in ('http', 'ftp') or fragment or not netloc:
 			self.send_error(400, "bad url %s" % self.path)
 			return
-		soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		global do_forward_socks
+		global socks_host
+		global socks_port
+		if do_forward_socks:
+			import socks
+			soc = socks.socksocket()
+			soc.setproxy(socks.PROXY_TYPE_SOCKS5, socks_host, socks_port)
+		else:
+			soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		try:
 			if scm == 'http':
 				if self._connect_to(netloc, soc):
@@ -248,8 +268,8 @@ class ThreadingHTTPServer (SocketServer.ThreadingMixIn,
 		self.logger = logger
 
 def logSetup (filename, log_size, daemon):
-	logger = logging.getLogger ("TinyHTTPProxy")
-	logger.setLevel (logging.INFO)
+	logger = logging.getLogger ("FlyingProxy")
+	logger.setLevel (logging.ERROR)
 	if not filename:
 		if not daemon:
 			# display to the screen
@@ -343,6 +363,15 @@ def main ():
 	credentials = cfg.get("proxy", "login")
 	run_event = threading.Event ()
 	local_hostname = socket.gethostname ()
+	
+	global do_forward_socks
+	global socks_host
+	global socks_port
+	do_forward_socks = cfg.get("proxy", "forwardToSOCKS")
+	if do_forward_socks:
+		import socks
+		socks_host = cfg.get("proxy", "SOCKSHost")
+		socks_port = int(cfg.get("proxy", "SOCKSPort"))
 	
 	try: opts, args = getopt.getopt (sys.argv[1:], "l:dhp:c:", [])
 	except getopt.GetoptError, e:
