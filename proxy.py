@@ -42,7 +42,8 @@ Any help will be greatly appreciated.		SUZUKI Hisao
 			 * Added code to make this a standalone application
 """
 
-__version__ = "0.3.3"
+__version__ = "0.3.4"
+__ident__   = "FlyingProxy/"+__version__
 
 import BaseHTTPServer, select, socket, SocketServer, urlparse
 import logging
@@ -73,7 +74,7 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 	__base = BaseHTTPServer.BaseHTTPRequestHandler
 	__base_handle = __base.handle
 
-	server_version = "TinyHTTPProxy/" + __version__
+	server_version = __ident__
 	rbufsize = 0						# self.rfile Be unbuffered
 
 	def handle(self):
@@ -90,7 +91,7 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		auth = self.headers.get("Proxy-Authorization")
 		if auth != "Basic "+base64.b64encode(credentials):
 			self.send_response(407, "Authentication required")
-			self.send_header("Proxy-Authenticate", "Basic realm=\"Flying Proxy\"")
+			self.send_header("Proxy-Authenticate", "Basic realm=\""+__ident__+"\"")
 			self.end_headers()
 			return False
 		return True
