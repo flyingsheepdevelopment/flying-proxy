@@ -58,11 +58,13 @@ import ftplib
 import base64
 import ConfigParser
 
-DEFAULT_LOG_FILENAME = "proxy.log"
-credentials = "dGVzdDp0ZXN0" # test:test
-do_forward_socks = False
-socks_host = ""
-socks_port = 0
+DEFAULT_LOG_FILENAME  = "proxy.log"
+credentials           = "dGVzdDp0ZXN0" # test:test
+do_override_useragent = False
+user_agent            = __ident__
+do_forward_socks      = False
+socks_host            = ""
+socks_port            = 0
 
 def _quote_html(html):
 	return html.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -160,6 +162,10 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 																	'')),
 											   self.request_version))
 					self.headers['Connection'] = 'close'
+					global do_override_useragent
+					global user_agent
+					if do_override_useragent:
+						self.headers["User-Agent"] = user_agent
 					del self.headers['Proxy-Connection']
 					for key_val in self.headers.items():
 						soc.send("%s: %s\r\n" % key_val)
@@ -363,6 +369,12 @@ def main ():
 	credentials = cfg.get("proxy", "login")
 	run_event = threading.Event ()
 	local_hostname = socket.gethostname ()
+	
+	global do_override_useragent
+	global user_agent
+	do_override_useragent = cfg.get("proxy", "overrideUserAgent")
+	if do_overrude_useragent:
+		user_agent = cfg.get("proxy", "userAgent")
 	
 	global do_forward_socks
 	global socks_host
