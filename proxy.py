@@ -374,7 +374,7 @@ def main ():
 	global do_override_useragent
 	global user_agent
 	do_override_useragent = cfg.get("proxy", "overrideUserAgent")
-	if do_overrude_useragent:
+	if do_override_useragent:
 		user_agent = cfg.get("proxy", "userAgent")
 	
 	global do_forward_socks
